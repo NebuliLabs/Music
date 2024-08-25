@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Play Video</title>
+    <title>Interactive YouTube Playlist</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -68,7 +68,7 @@
 </head>
 <body>
 
-<h1>Play Video</h1>
+<h1>Interactive YouTube Playlist</h1>
 
 <div id="player"></div>
 
@@ -108,7 +108,7 @@
 
     function onPlayerReady(event) {
         if (videoIds.length > 0) {
-            player.loadVideoById(videoIds[0]);
+            player.loadVideoById(videoIds[currentVideoIndex]);
         }
     }
 
@@ -125,27 +125,56 @@
         var videoUrl = document.getElementById('videoUrl').value;
         var videoId = extractVideoId(videoUrl);
         if (videoId) {
-            videoIds.push(videoId);
-            var videoList = document.getElementById('videoList');
-            var listItem = document.createElement('li');
-            listItem.textContent = `Video ${videoIds.length}`;
-            listItem.setAttribute('data-video-id', videoId);
-            listItem.addEventListener('click', function() {
-                currentVideoIndex = videoIds.indexOf(videoId);
-                player.loadVideoById(videoId);
-            });
-            videoList.appendChild(listItem);
+            if (!videoIds.includes(videoId)) {
+                videoIds.push(videoId);
+                var videoList = document.getElementById('videoList');
+                var listItem = document.createElement('li');
+                listItem.textContent = `Video ${videoIds.length}`;
+                listItem.setAttribute('data-video-id', videoId);
+                listItem.addEventListener('click', function() {
+                    currentVideoIndex = videoIds.indexOf(videoId);
+                    player.loadVideoById(videoId);
+                });
+                videoList.appendChild(listItem);
+                savePlaylist();
+            }
             document.getElementById('videoUrl').value = '';
         } else {
             alert('Please enter a valid YouTube URL.');
         }
     }
 
-    // Load the IFrame Player API code asynchronously.
-    var tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    var firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    function savePlaylist() {
+        localStorage.setItem('videoPlaylist', JSON.stringify(videoIds));
+    }
+
+    function loadPlaylist() {
+        var savedPlaylist = localStorage.getItem('videoPlaylist');
+        if (savedPlaylist) {
+            videoIds = JSON.parse(savedPlaylist);
+            var videoList = document.getElementById('videoList');
+            videoList.innerHTML = '';
+            videoIds.forEach(function(videoId, index) {
+                var listItem = document.createElement('li');
+                listItem.textContent = `Video ${index + 1}`;
+                listItem.setAttribute('data-video-id', videoId);
+                listItem.addEventListener('click', function() {
+                    currentVideoIndex = videoIds.indexOf(videoId);
+                    player.loadVideoById(videoId);
+                });
+                videoList.appendChild(listItem);
+            });
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        loadPlaylist();
+        // Load the IFrame Player API code asynchronously.
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    });
 </script>
 
 </body>
