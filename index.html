@@ -64,19 +64,52 @@
         #inputSection button:hover {
             background-color: #0056b3;
         }
+
+        .tab {
+            cursor: pointer;
+            padding: 10px;
+            border: 1px solid #555;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .tab.active {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
 
-<h1>Interactive YouTube Playlist</h1>
+<h1>Videos and Playlists</h1>
 
-<div id="player"></div>
+<div>
+    <span class="tab active" onclick="showTab('playlistTab')">Playlist</span>
+    <span class="tab" onclick="showTab('savedPlaylistsTab')">Saved Playlists</span>
+</div>
 
-<ul id="videoList"></ul>
+<div id="playlistTab" class="tab-content active">
+    <div id="player"></div>
+    <ul id="videoList"></ul>
+    <div id="inputSection">
+        <input type="text" id="videoUrl" placeholder="Enter YouTube video URL">
+        <button onclick="addVideo()">Add Video</button>
+        <button onclick="savePlaylist()">Save Playlist</button>
+    </div>
+</div>
 
-<div id="inputSection">
-    <input type="text" id="videoUrl" placeholder="Enter YouTube video URL">
-    <button onclick="addVideo()">Add Video</button>
+<div id="savedPlaylistsTab" class="tab-content">
+    <h2>Saved Playlists</h2>
+    <ul id="savedPlaylists"></ul>
 </div>
 
 <script>
@@ -136,7 +169,6 @@
                     player.loadVideoById(videoId);
                 });
                 videoList.appendChild(listItem);
-                savePlaylist();
             }
             document.getElementById('videoUrl').value = '';
         } else {
@@ -146,6 +178,7 @@
 
     function savePlaylist() {
         localStorage.setItem('videoPlaylist', JSON.stringify(videoIds));
+        loadSavedPlaylists();
     }
 
     function loadPlaylist() {
@@ -167,8 +200,42 @@
         }
     }
 
+    function loadSavedPlaylists() {
+        var savedPlaylist = localStorage.getItem('videoPlaylist');
+        var savedPlaylistsContainer = document.getElementById('savedPlaylists');
+        savedPlaylistsContainer.innerHTML = '';
+        if (savedPlaylist) {
+            var playlist = JSON.parse(savedPlaylist);
+            playlist.forEach(function(videoId, index) {
+                var listItem = document.createElement('li');
+                listItem.textContent = `Video ${index + 1}`;
+                listItem.addEventListener('click', function() {
+                    currentVideoIndex = index;
+                    player.loadVideoById(videoId);
+                    showTab('playlistTab');
+                });
+                savedPlaylistsContainer.appendChild(listItem);
+            });
+        }
+    }
+
+    function showTab(tabId) {
+        var tabs = document.querySelectorAll('.tab-content');
+        tabs.forEach(function(tab) {
+            tab.classList.remove('active');
+        });
+        document.getElementById(tabId).classList.add('active');
+        
+        var tabButtons = document.querySelectorAll('.tab');
+        tabButtons.forEach(function(button) {
+            button.classList.remove('active');
+        });
+        event.currentTarget.classList.add('active');
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         loadPlaylist();
+        loadSavedPlaylists();
         // Load the IFrame Player API code asynchronously.
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
