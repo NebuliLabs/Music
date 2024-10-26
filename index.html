@@ -86,6 +86,16 @@
         .tab-content.active {
             display: block;
         }
+
+        /* Apply a black background to the CSE search box */
+        .gcse-search {
+            background-color: black;
+        }
+
+        /* Apply a black background to the entire search results section */
+        .gsc-control-cse, .gsc-control-cse .gsc-resultsbox-visible {
+            background-color: black !important;
+        }
     </style>
 </head>
 <body>
@@ -95,6 +105,7 @@
 <div>
     <span class="tab active" onclick="showTab('playlistTab')">Playlist</span>
     <span class="tab" onclick="showTab('savedPlaylistsTab')">Saved Playlists</span>
+    <span class="tab" onclick="showTab('searchTab')">Search</span>
 </div>
 
 <div id="playlistTab" class="tab-content active">
@@ -104,12 +115,22 @@
         <input type="text" id="videoUrl" placeholder="Enter YouTube video URL">
         <button onclick="addVideo()">Add Video</button>
         <button onclick="savePlaylist()">Save Playlist</button>
+        <button onclick="shuffleVideos()">Shuffle</button>
     </div>
 </div>
 
 <div id="savedPlaylistsTab" class="tab-content">
     <h2>Saved Playlists</h2>
     <ul id="savedPlaylists"></ul>
+</div>
+
+<div id="searchTab" class="tab-content">
+    <script async src="https://cse.google.com/cse.js?cx=c23ee5f5fb92c4bd1"></script>
+    <div class="gcse-search"></div>
+    <h2>Convert Google Search URL to YouTube URL</h2>
+    <input type="text" id="googleUrl" placeholder="Paste Google search URL here">
+    <button onclick="convertToYouTubeUrl()">Get YouTube URL</button>
+    <p id="result"></p>
 </div>
 
 <script>
@@ -208,14 +229,41 @@
             var playlist = JSON.parse(savedPlaylist);
             playlist.forEach(function(videoId, index) {
                 var listItem = document.createElement('li');
-                listItem.textContent = `Video ${index + 1}`;
-                listItem.addEventListener('click', function() {
-                    currentVideoIndex = index;
-                    player.loadVideoById(videoId);
-                    showTab('playlistTab');
-                });
+                listItem.innerHTML = `
+                    Video ${index + 1} 
+                    <button onclick="editVideo('${videoId}', ${index})">Edit</button> 
+                    <button onclick="deleteVideo(${index})">Delete</button>
+                `;
                 savedPlaylistsContainer.appendChild(listItem);
             });
+        }
+    }
+
+    function editVideo(videoId, index) {
+        const newUrl = prompt("Enter new YouTube URL:", `https://www.youtube.com/watch?v=${videoId}`);
+        if (newUrl) {
+            const newVideoId = extractVideoId(newUrl);
+            if (newVideoId && !videoIds.includes(newVideoId)) {
+                videoIds[index] = newVideoId;
+                savePlaylist();
+            } else {
+                alert('Please enter a valid YouTube URL or this video already exists.');
+            }
+        }
+    }
+
+    function deleteVideo(index) {
+        videoIds.splice(index, 1);
+        savePlaylist();
+    }
+
+    function shuffleVideos() {
+        for (let i = videoIds.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [videoIds[i], videoIds[j]] = [videoIds[j], videoIds[i]];
+        }
+        if (videoIds.length > 0) {
+            player.loadVideoById(videoIds[currentVideoIndex]);
         }
     }
 
@@ -233,16 +281,23 @@
         event.currentTarget.classList.add('active');
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-        loadPlaylist();
-        loadSavedPlaylists();
-        // Load the IFrame Player API code asynchronously.
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-    });
+    function convertToYouTubeUrl() {
+        const googleUrl = document.getElementById('googleUrl').value;
+        const urlParams = new URLSearchParams(new URL(googleUrl).search);
+        const youtubeUrl = urlParams.get('q');
+        
+        if (youtubeUrl) {
+            const validYouTubeUrl = decodeURIComponent(youtubeUrl);
+            document.getElementById('result').textContent = validYouTubeUrl;
+        } else {
+            document.getElementById('result').textContent = 'Invalid Google URL.';
+        }
+    }
+
+    window.onload = loadPlaylist;
 </script>
+
+<script src="https://www.youtube.com/iframe_api"></script>
 
 </body>
 </html>
